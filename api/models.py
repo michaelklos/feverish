@@ -9,8 +9,9 @@ class FeverUserManager(BaseUserManager):
             raise ValueError('Users must have an email address')
         user = self.model(email=self.normalize_email(email))
         user.set_password(password)
-        # Store the API key for Fever compatibility
+        # Store the API key for Fever compatibility (MD5 required by Fever API spec)
         if password:
+            # Note: MD5 is used here for API key generation per Fever spec, not for password storage
             user.fever_api_key = hashlib.md5(f"{email}:{password}".encode()).hexdigest()
         user.save(using=self._db)
         return user
@@ -31,9 +32,16 @@ class FeverUser(AbstractBaseUser):
     USERNAME_FIELD = 'email'
     
     def set_password(self, raw_password):
-        """Override to also set fever_api_key"""
+        """
+        Override to also set fever_api_key.
+        
+        Note: The Fever API spec requires MD5 hashing for API keys (md5(email:password)).
+        This is less secure than modern password hashing but necessary for API compatibility.
+        The actual Django password is stored securely using Django's password hashing.
+        """
         super().set_password(raw_password)
         if raw_password:
+            # MD5 required for Fever API compatibility - not for password storage
             self.fever_api_key = hashlib.md5(f"{self.email}:{raw_password}".encode()).hexdigest()
     
     def get_api_key(self):
