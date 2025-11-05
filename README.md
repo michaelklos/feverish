@@ -14,6 +14,35 @@ A Python/Django port of the Fever RSS reader, maintaining full backward compatib
 - ✅ Feed groups and organization
 - ✅ Mark items as read/unread/saved
 - ✅ Hot links calculation
+- ✅ Comprehensive test suite (10 tests, all passing)
+- ✅ Django admin interface
+- ✅ Web-based reader interface
+
+## Quick Start
+
+```bash
+# Clone and navigate to the repo
+cd fever
+
+# Install dependencies
+pip install uv
+uv sync
+
+# Run migrations
+uv run python manage.py migrate
+
+# Set up demo data (optional)
+uv run python setup_demo.py
+
+# Refresh feeds
+uv run python manage.py refresh_feeds --user demo@example.com
+
+# Start server
+uv run python manage.py runserver
+
+# Visit http://localhost:8000/
+# Login: demo@example.com / demopassword
+```
 
 ## Requirements
 
