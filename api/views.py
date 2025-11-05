@@ -7,20 +7,20 @@ import hashlib
 import time
 
 
-def authenticate_api_key(api_key, email=None):
-    """Authenticate user by API key"""
+def authenticate_api_key(api_key):
+    """
+    Authenticate user by API key.
+    The Fever API key is md5(email:password) where password is the plain text password.
+    We store this in fever_api_key field for quick lookup.
+    """
     if not api_key:
         return None
     
-    # Try to find user by matching the API key
-    for user in FeverUser.objects.all():
-        # API key format: md5(email:password_hash)
-        # Since Django stores hashed passwords, we need to compare directly
-        expected_key = hashlib.md5(f"{user.email}:{user.password}".encode()).hexdigest()
-        if api_key.lower() == expected_key.lower():
-            return user
-    
-    return None
+    try:
+        user = FeverUser.objects.get(fever_api_key=api_key.lower())
+        return user
+    except FeverUser.DoesNotExist:
+        return None
 
 
 @csrf_exempt

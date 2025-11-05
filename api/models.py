@@ -9,6 +9,9 @@ class FeverUserManager(BaseUserManager):
             raise ValueError('Users must have an email address')
         user = self.model(email=self.normalize_email(email))
         user.set_password(password)
+        # Store the API key for Fever compatibility
+        if password:
+            user.fever_api_key = hashlib.md5(f"{email}:{password}".encode()).hexdigest()
         user.save(using=self._db)
         return user
 
@@ -16,6 +19,7 @@ class FeverUserManager(BaseUserManager):
 class FeverUser(AbstractBaseUser):
     """User model for Fever authentication"""
     email = models.EmailField(unique=True)
+    fever_api_key = models.CharField(max_length=32, blank=True, db_index=True)  # MD5 hash
     activation_key = models.CharField(max_length=255, blank=True)
     installed_on_time = models.IntegerField(default=0)
     last_viewed_on_time = models.IntegerField(default=0)
@@ -26,9 +30,15 @@ class FeverUser(AbstractBaseUser):
     
     USERNAME_FIELD = 'email'
     
+    def set_password(self, raw_password):
+        """Override to also set fever_api_key"""
+        super().set_password(raw_password)
+        if raw_password:
+            self.fever_api_key = hashlib.md5(f"{self.email}:{raw_password}".encode()).hexdigest()
+    
     def get_api_key(self):
-        """Generate Fever API key (md5 of email:password)"""
-        return hashlib.md5(f"{self.email}:{self.password}".encode()).hexdigest()
+        """Get Fever API key"""
+        return self.fever_api_key
     
     class Meta:
         db_table = 'fever_users'
