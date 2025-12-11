@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fever - RSS Reader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: white;
+            border-bottom: 1px solid #ddd;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 20px;
+            color: #333;
+        }
+        .header a {
+            color: #666;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        .header a:hover {
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .welcome {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .welcome h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .welcome p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .api-info {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: left;
+        }
+        .api-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .api-info code {
+            background: #e8e8e8;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .api-info ul {
+            list-style: none;
+            padding: 0;
+        }
+        .api-info li {
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .api-info li:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔥 Fever</h1>
+        <div>
+            <a href="{% url 'admin:index' %}">Admin</a>
+            <a href="{% url 'logout' %}">Logout</a>
+        </div>
+    </div>
+    <div class="container">
+        <div class="welcome">
+            <h2>Welcome to Fever RSS Reader</h2>
+            <p>This is a modern Python/Django implementation of the Fever RSS reader, maintaining full backward compatibility with the Fever API v3.</p>
+            <p>You can use this with iOS/macOS apps like Reeder, ReadKit, and other Fever-compatible RSS readers.</p>
+            
+            <div class="api-info">
+                <h3>Getting Started</h3>
+                <ul>
+                    <li><strong>API Endpoint:</strong> <code>{{ request.scheme }}://{{ request.get_host }}/api/</code></li>
+                    <li><strong>Admin Panel:</strong> <a href="{% url 'admin:index' %}">Manage feeds and groups</a></li>
+                    <li><strong>Your Email:</strong> <code>{{ request.user.email }}</code></li>
+                </ul>
+                
+                <h3 style="margin-top: 20px;">Configure Your RSS Reader</h3>
+                <p style="margin-top: 10px;">In your Fever-compatible app (like Reeder):</p>
+                <ul>
+                    <li><strong>Server:</strong> <code>{{ request.scheme }}://{{ request.get_host }}</code></li>
+                    <li><strong>Email:</strong> Your registered email address</li>
+                    <li><strong>Password:</strong> Your account password</li>
+                </ul>
+                
+                <h3 style="margin-top: 20px;">Next Steps</h3>
+                <ul>
+                    <li>Add feeds via the <a href="{% url 'admin:index' %}">Admin Panel</a></li>
+                    <li>Organize feeds into groups</li>
+                    <li>Run: <code>uv run python manage.py refresh_feeds</code> to fetch articles</li>
+                    <li>Connect your RSS reader app using the API endpoint above</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
