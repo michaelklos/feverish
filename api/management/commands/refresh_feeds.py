@@ -26,6 +26,14 @@ class Command(BaseCommand):
         else:
             feeds = Feed.objects.all()
 
+        try:
+            if not feeds.exists():
+                self.stdout.write(self.style.WARNING('No feeds found to refresh.'))
+                return
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'Database not ready or error accessing feeds: {e}'))
+            return
+
         for feed in feeds:
             self.stdout.write(f'Refreshing feed: {feed.title or feed.url}')
             try:

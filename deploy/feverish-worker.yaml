@@ -3,7 +3,7 @@ properties:
   configuration:
     triggerType: Schedule
     scheduleTriggerConfig:
-      cronExpression: "*/15 * * * *"
+      cronExpression: "0 * * * *"
       parallelism: 1
       replicaCompletionCount: 1
     replicaTimeout: 300
