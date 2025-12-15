@@ -1,10 +1,12 @@
 properties:
-  managedEnvironmentId: "$ENV_ID"
+  environmentId: "$ENV_ID"
   configuration:
     activeRevisionsMode: Single
     ingress:
       external: true
       targetPort: 8000
+      transport: auto
+      allowInsecure: false
     secrets:
       - name: db-url
         value: sqlite:////data/db.sqlite3
@@ -17,6 +19,9 @@ properties:
         username: kloshost
         passwordSecretRef: acr-password
   template:
+    scale:
+      minReplicas: 1
+      maxReplicas: 1
     containers:
       - image: "$IMAGE_WEB"
         name: feverish-web
@@ -32,9 +37,6 @@ properties:
         volumeMounts:
           - volumeName: azure-file-volume
             mountPath: /data
-    scale:
-      minReplicas: 0
-      maxReplicas: 10
     volumes:
       - name: azure-file-volume
         storageType: AzureFile
