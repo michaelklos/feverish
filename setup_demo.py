@@ -9,7 +9,7 @@ import django
 import hashlib
 
 # Setup Django environment
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'fever_django.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'feverish.settings')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 django.setup()
 
@@ -21,7 +21,7 @@ def setup_demo_data():
     """Create demo user and sample feeds"""
 
     print("=" * 60)
-    print("Fever Django - Quick Setup")
+    print("Feverish - Quick Setup")
     print("=" * 60)
 
     # Create demo user

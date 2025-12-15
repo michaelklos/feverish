@@ -1,0 +1,44 @@
+location: eastus
+name: feverish-worker
+resourceGroup: feverish-rg
+type: Microsoft.App/jobs
+properties:
+  environmentId: $ENV_ID
+  configuration:
+    triggerType: Schedule
+    scheduleTriggerConfig:
+      cronExpression: "*/15 * * * *"
+      parallelism: 1
+      replicaCompletionCount: 1
+    replicaTimeout: 300
+    replicaRetryLimit: 0
+    secrets:
+      - name: db-url
+        value: sqlite:////data/db.sqlite3
+      - name: secret-key
+        value: $SECRET_KEY
+      - name: acr-password
+        value: $ACR_PASSWORD
+    registries:
+      - server: kloshost.azurecr.io
+        username: kloshost
+        passwordSecretRef: acr-password
+  template:
+    containers:
+      - image: $IMAGE_WORKER
+        name: feverish-worker
+        command: ["python", "manage.py", "refresh_feeds"]
+        env:
+          - name: DATABASE_URL
+            secretRef: db-url
+          - name: SECRET_KEY
+            secretRef: secret-key
+          - name: DEBUG
+            value: "False"
+        volumeMounts:
+          - volumeName: azure-file-volume
+            mountPath: /data
+    volumes:
+      - name: azure-file-volume
+        storageType: AzureFile
+        storageName: feverishdata

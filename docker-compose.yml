@@ -8,7 +8,7 @@ services:
     environment:
       - DJANGO_ALLOWED_HOSTS=*
       - CSRF_TRUSTED_ORIGINS=http://localhost:8000
-      - DATABASE_URL=postgres://fever:fever@db:5432/fever
+      - DATABASE_URL=postgres://feverish:feverish@db:5432/feverish
       - DEBUG=True
     depends_on:
       - db
@@ -19,7 +19,7 @@ services:
     volumes:
       - .:/app
     environment:
-      - DATABASE_URL=postgres://fever:fever@db:5432/fever
+      - DATABASE_URL=postgres://feverish:feverish@db:5432/feverish
       - DEBUG=True
     depends_on:
       - db
@@ -29,9 +29,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=fever
-      - POSTGRES_USER=fever
-      - POSTGRES_PASSWORD=fever
+      - POSTGRES_DB=feverish
+      - POSTGRES_USER=feverish
+      - POSTGRES_PASSWORD=feverish
 
 volumes:
   postgres_data:

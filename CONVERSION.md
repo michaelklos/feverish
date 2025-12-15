@@ -1,8 +1,8 @@
-# Fever PHP to Django Conversion Summary
+# Feverish: Fever PHP to Django Conversion Summary
 
 ## Overview
 
-This document summarizes the conversion of the Fever RSS reader from PHP to Python/Django while maintaining full backward compatibility with the Fever API v3.
+This document summarizes the conversion of the legacy Fever RSS reader from PHP to Python/Django (now called **Feverish**) while maintaining full backward compatibility with the Fever API v3.
 
 ## What Was Converted
 

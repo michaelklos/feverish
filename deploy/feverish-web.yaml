@@ -1,0 +1,45 @@
+location: eastus
+name: feverish-web
+resourceGroup: feverish-rg
+type: Microsoft.App/containerApps
+properties:
+  managedEnvironmentId: $ENV_ID
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      external: true
+      targetPort: 8000
+    secrets:
+      - name: db-url
+        value: sqlite:////data/db.sqlite3
+      - name: secret-key
+        value: $SECRET_KEY
+      - name: acr-password
+        value: $ACR_PASSWORD
+    registries:
+      - server: kloshost.azurecr.io
+        username: kloshost
+        passwordSecretRef: acr-password
+  template:
+    containers:
+      - image: $IMAGE_WEB
+        name: feverish-web
+        env:
+          - name: DATABASE_URL
+            secretRef: db-url
+          - name: SECRET_KEY
+            secretRef: secret-key
+          - name: DJANGO_ALLOWED_HOSTS
+            value: "*"
+          - name: DEBUG
+            value: "False"
+        volumeMounts:
+          - volumeName: azure-file-volume
+            mountPath: /data
+    scale:
+      minReplicas: 0
+      maxReplicas: 10
+    volumes:
+      - name: azure-file-volume
+        storageType: AzureFile
+        storageName: feverishdata

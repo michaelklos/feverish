@@ -1,7 +1,7 @@
 [project]
-name = "fever"
+name = "feverish"
 version = "0.1.0"
-description = "Add your description here"
+description = "A modern, Fever-compatible RSS reader backend"
 requires-python = ">=3.12"
 dependencies = [
     "django>=5.2.7",
@@ -22,4 +22,4 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["api", "fever_django"]
+packages = ["api", "feverish"]

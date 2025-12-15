@@ -1,6 +1,8 @@
-# Fever - Modern Python/Django RSS Reader
+# Feverish - Modern Python/Django Fever API Implementation
 
-A Python/Django port of the Fever RSS reader, maintaining full backward compatibility with the Fever API v3. This allows you to use modern RSS reader apps like Reeder with a self-hosted, up-to-date backend.
+A Python/Django implementation of the Fever API, maintaining full backward compatibility with the Fever API v3. This allows you to use modern RSS reader apps like Reeder with a self-hosted, up-to-date backend.
+
+> **Note:** This project is primarily designed as a backend API for Fever-compatible clients (like Reeder, ReadKit, etc.). While it includes a basic web interface for administration and debugging, the web UI is "light on polish" and is not intended to be the primary way you consume your feeds.
 
 ## Features
 
@@ -8,15 +10,15 @@ A Python/Django port of the Fever RSS reader, maintaining full backward compatib
 - ✅ Works with Reeder and other Fever-compatible RSS readers
 - ✅ Modern Python/Django codebase
 - ✅ Database-agnostic (SQLite, PostgreSQL, MySQL supported)
-- ✅ Easy deployment with uv package manager
+- ✅ Easy deployment with Docker or standard Python tools
 - ✅ RSS/Atom feed parsing with feedparser
 - ✅ Multi-user support
 - ✅ Feed groups and organization
 - ✅ Mark items as read/unread/saved
 - ✅ Hot links calculation
-- ✅ Comprehensive test suite (10 tests, all passing)
+- ✅ Comprehensive test suite
 - ✅ Django admin interface
-- ✅ Web-based reader interface
+- ✅ Basic web-based reader interface (for testing/admin)
 
 ## Quick Start (Docker)
 
@@ -72,16 +74,16 @@ uv run python manage.py runserver
 ### 1. Clone and Setup
 
 ```bash
-git clone https://github.com/michaelklos/fever.git
-cd fever
+git clone https://github.com/michaelklos/feverish.git
+cd feverish
 ```
 
 ### 2. Install Dependencies
 
-The project uses `uv` for fast, reliable dependency management:
+The project uses standard Python tooling. You can use `pip` or `uv`:
 
 ```bash
-# Install uv if you haven't already
+# Install uv (optional, but recommended for speed)
 pip install uv
 
 # Install project dependencies
@@ -93,7 +95,7 @@ uv run pre-commit install
 
 ### 3. Configure Database
 
-By default, the application uses SQLite. To use PostgreSQL or MySQL, update `fever_django/settings.py`:
+By default, the application uses SQLite. To use PostgreSQL or MySQL, update `feverish/settings.py`:
 
 **For PostgreSQL:**
 ```python

@@ -63,3 +63,5 @@ htmlcov/
 # Migrations (keep initial)
 */migrations/__pycache__/
 */migrations/*.pyc
+# Deployment
+deploy/*.generated.yaml
