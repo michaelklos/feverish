@@ -3,6 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from .models import FeverUser, Feed, Group, Item, Favicon, FeedGroup, Link
+from .utils import refresh_feed
 import hashlib
 import time
 
@@ -15,7 +16,7 @@ def authenticate_api_key(api_key):
     """
     if not api_key:
         return None
-    
+
     try:
         user = FeverUser.objects.get(fever_api_key=api_key.lower())
         return user
@@ -33,17 +34,17 @@ def fever_api(request):
     # Merge GET and POST parameters
     params = request.GET.copy()
     params.update(request.POST)
-    
+
     # Base response
     response_data = {
         'api_version': 3,
         'auth': 0
     }
-    
+
     # Authentication
     api_key = params.get('api_key', '')
     user = authenticate_api_key(api_key)
-    
+
     if user:
         response_data['auth'] = 1
         user.last_session_on_time = int(time.time())
@@ -51,23 +52,35 @@ def fever_api(request):
     else:
         # Return auth failure immediately
         return JsonResponse(response_data)
-    
+
+    # Refresh feeds if requested
+    if 'refresh' in params:
+        print("Refresh requested via API")
+        feeds = Feed.objects.filter(user=user)
+        for feed in feeds:
+            try:
+                refresh_feed(feed)
+            except Exception as e:
+                print(f"Error refreshing feed {feed.id}: {e}")
+                # Ignore errors during refresh to prevent API failure
+                pass
+
     # Get last refreshed time
     last_refreshed = Feed.objects.filter(user=user).order_by('-last_refreshed_on_time').first()
     if last_refreshed:
         response_data['last_refreshed_on_time'] = last_refreshed.last_refreshed_on_time
-    
+
     # Handle mark operations (read/unread, saved/unsaved)
     if 'mark' in params and 'as' in params and 'id' in params:
         mark_type = params['mark']
         as_type = params['as']
         item_ids = params['id']
         before = params.get('before')
-        
+
         if mark_type == 'item':
             ids = [int(i) for i in item_ids.split(',')]
             items = Item.objects.filter(id__in=ids, feed__user=user)
-            
+
             if as_type == 'read':
                 items.update(read_on_time=int(time.time()))
             elif as_type == 'unread':
@@ -76,30 +89,30 @@ def fever_api(request):
                 items.update(is_saved=True)
             elif as_type == 'unsaved':
                 items.update(is_saved=False)
-                
+
         elif mark_type == 'feed':
             feed_id = int(item_ids)
             items = Item.objects.filter(feed_id=feed_id, feed__user=user)
             if before:
                 items = items.filter(created_on_time__lte=int(before))
-            
+
             if as_type == 'read':
                 items.update(read_on_time=int(time.time()))
             elif as_type == 'unread':
                 items.update(read_on_time=0)
-                
+
         elif mark_type == 'group':
             group_id = int(item_ids)
             feed_ids = FeedGroup.objects.filter(group_id=group_id, group__user=user).values_list('feed_id', flat=True)
             items = Item.objects.filter(feed_id__in=feed_ids)
             if before:
                 items = items.filter(created_on_time__lte=int(before))
-            
+
             if as_type == 'read':
                 items.update(read_on_time=int(time.time()))
             elif as_type == 'unread':
                 items.update(read_on_time=0)
-    
+
     # Groups
     if 'groups' in params:
         groups = Group.objects.filter(user=user).values('id', 'title')
@@ -107,12 +120,12 @@ def fever_api(request):
             {'id': g['id'], 'title': g['title']}
             for g in groups
         ]
-    
+
     # Feeds
     if 'feeds' in params or 'groups' in params:
         feeds = Feed.objects.filter(user=user).select_related('favicon')
         feeds_data = []
-        
+
         for feed in feeds:
             feeds_data.append({
                 'id': feed.id,
@@ -123,13 +136,13 @@ def fever_api(request):
                 'is_spark': 1 if feed.is_spark else 0,
                 'last_updated_on_time': feed.last_updated_on_time
             })
-        
+
         if 'feeds' in params:
             response_data['feeds'] = feeds_data
-        
+
         # Feed-group relationships
         feed_groups = FeedGroup.objects.filter(feed__user=user, feed__is_spark=False).values('group_id', 'feed_id')
-        
+
         # Group feeds by group_id
         groups_dict = {}
         for fg in feed_groups:
@@ -137,12 +150,12 @@ def fever_api(request):
             if group_id not in groups_dict:
                 groups_dict[group_id] = []
             groups_dict[group_id].append(str(fg['feed_id']))
-        
+
         response_data['feeds_groups'] = [
             {'group_id': gid, 'feed_ids': ','.join(fids)}
             for gid, fids in groups_dict.items()
         ]
-    
+
     # Favicons
     if 'favicons' in params:
         favicons = Favicon.objects.all().values('id', 'cache')
@@ -150,23 +163,23 @@ def fever_api(request):
             {'id': f['id'], 'data': f['cache']}
             for f in favicons
         ]
-    
+
     # Items
     if 'items' in params:
         items_qs = Item.objects.filter(feed__user=user)
-        
+
         response_data['total_items'] = items_qs.count()
-        
+
         # Filter by feed_ids or group_ids
         if 'feed_ids' in params:
             feed_ids = [int(i) for i in params['feed_ids'].split(',')]
             items_qs = items_qs.filter(feed_id__in=feed_ids)
-        
+
         if 'group_ids' in params:
             group_ids = [int(i) for i in params['group_ids'].split(',')]
             feed_ids = FeedGroup.objects.filter(group_id__in=group_ids).values_list('feed_id', flat=True)
             items_qs = items_qs.filter(feed_id__in=feed_ids)
-        
+
         # Pagination
         if 'max_id' in params:
             max_id = int(params['max_id'])
@@ -181,7 +194,7 @@ def fever_api(request):
             items_qs = items_qs.filter(id__gt=since_id).order_by('id')[:50]
         else:
             items_qs = items_qs.order_by('-id')[:50]
-        
+
         items_data = []
         for item in items_qs:
             items_data.append({
@@ -195,9 +208,9 @@ def fever_api(request):
                 'is_read': 1 if item.read_on_time > 0 else 0,
                 'created_on_time': item.created_on_time
             })
-        
+
         response_data['items'] = items_data
-    
+
     # Unread item IDs
     if 'unread_item_ids' in params:
         unread_ids = Item.objects.filter(
@@ -205,7 +218,7 @@ def fever_api(request):
             read_on_time=0
         ).values_list('id', flat=True)
         response_data['unread_item_ids'] = ','.join(map(str, unread_ids))
-    
+
     # Saved item IDs
     if 'saved_item_ids' in params:
         saved_ids = Item.objects.filter(
@@ -213,7 +226,7 @@ def fever_api(request):
             is_saved=True
         ).values_list('id', flat=True)
         response_data['saved_item_ids'] = ','.join(map(str, saved_ids))
-    
+
     # Links (for hot calculation)
     if 'links' in params:
         links = Link.objects.filter(feed__user=user).order_by('-weight')[:50]
@@ -229,5 +242,5 @@ def fever_api(request):
             }
             for link in links
         ]
-    
+
     return JsonResponse(response_data)

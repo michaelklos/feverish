@@ -1,13 +1,14 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 import hashlib
 
 
 class FeverUserManager(BaseUserManager):
-    def create_user(self, email, password=None):
+    def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError('Users must have an email address')
-        user = self.model(email=self.normalize_email(email))
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
         user.set_password(password)
         # Store the API key for Fever compatibility (MD5 required by Fever API spec)
         if password:
@@ -16,25 +17,39 @@ class FeverUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
 
-class FeverUser(AbstractBaseUser):
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(email, password, **extra_fields)
+
+
+class FeverUser(AbstractBaseUser, PermissionsMixin):
     """User model for Fever authentication"""
     email = models.EmailField(unique=True)
     fever_api_key = models.CharField(max_length=32, blank=True, db_index=True)  # MD5 hash
     activation_key = models.CharField(max_length=255, blank=True)
-    installed_on_time = models.IntegerField(default=0)
-    last_viewed_on_time = models.IntegerField(default=0)
-    last_session_on_time = models.IntegerField(default=0)
+    installed_on_time = models.BigIntegerField(default=0)
+    last_viewed_on_time = models.BigIntegerField(default=0)
+    last_session_on_time = models.BigIntegerField(default=0)
     version = models.IntegerField(default=143)
-    
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
     objects = FeverUserManager()
-    
+
     USERNAME_FIELD = 'email'
-    
+
     def set_password(self, raw_password):
         """
         Override to also set fever_api_key.
-        
+
         Note: The Fever API spec requires MD5 hashing for API keys (md5(email:password)).
         This is less secure than modern password hashing but necessary for API compatibility.
         The actual Django password is stored securely using Django's password hashing.
@@ -43,11 +58,11 @@ class FeverUser(AbstractBaseUser):
         if raw_password:
             # MD5 required for Fever API compatibility - not for password storage
             self.fever_api_key = hashlib.md5(f"{self.email}:{raw_password}".encode()).hexdigest()
-    
+
     def get_api_key(self):
         """Get Fever API key"""
         return self.fever_api_key
-    
+
     class Meta:
         db_table = 'fever_users'
 
@@ -57,7 +72,7 @@ class Config(models.Model):
     user = models.OneToOneField(FeverUser, on_delete=models.CASCADE, related_name='config')
     cfg = models.TextField()  # JSON serialized config
     prefs = models.TextField()  # JSON serialized preferences
-    
+
     class Meta:
         db_table = 'fever_config'
 
@@ -66,9 +81,9 @@ class Favicon(models.Model):
     """Favicon storage"""
     cache = models.TextField()  # Base64 encoded favicon data
     url = models.CharField(max_length=255)
-    url_checksum = models.IntegerField(unique=True)
-    last_cached_on_time = models.IntegerField(default=0)
-    
+    url_checksum = models.BigIntegerField(unique=True)
+    last_cached_on_time = models.BigIntegerField(default=0)
+
     class Meta:
         db_table = 'fever_favicons'
         indexes = [
@@ -78,13 +93,13 @@ class Favicon(models.Model):
 
 class Group(models.Model):
     """Feed groups"""
-    user = models.ForeignKey(FeverUser, on_delete=models.CASCADE, related_name='groups')
+    user = models.ForeignKey(FeverUser, on_delete=models.CASCADE, related_name='fever_groups')
     title = models.CharField(max_length=255)
     item_excerpts = models.SmallIntegerField(default=-1)
     item_allows = models.SmallIntegerField(default=-1)
     unread_counts = models.SmallIntegerField(default=-1)
     sort_order = models.SmallIntegerField(default=-1)
-    
+
     class Meta:
         db_table = 'fever_groups'
         indexes = [
@@ -98,7 +113,7 @@ class Feed(models.Model):
     favicon = models.ForeignKey(Favicon, on_delete=models.SET_NULL, null=True, blank=True)
     title = models.CharField(max_length=255, null=True, blank=True)
     url = models.CharField(max_length=255)
-    url_checksum = models.IntegerField(unique=True)
+    url_checksum = models.BigIntegerField(unique=True)
     site_url = models.CharField(max_length=255, null=True, blank=True)
     domain = models.CharField(max_length=255, null=True, blank=True)
     requires_auth = models.BooleanField(default=False)
@@ -109,11 +124,11 @@ class Feed(models.Model):
     item_allows = models.SmallIntegerField(default=-1)
     unread_counts = models.SmallIntegerField(default=-1)
     sort_order = models.SmallIntegerField(default=-1)
-    last_refreshed_on_time = models.IntegerField(default=0)
-    last_updated_on_time = models.IntegerField(default=0)
-    last_added_on_time = models.IntegerField(default=0)
+    last_refreshed_on_time = models.BigIntegerField(default=0)
+    last_updated_on_time = models.BigIntegerField(default=0)
+    last_added_on_time = models.BigIntegerField(default=0)
     groups = models.ManyToManyField(Group, through='FeedGroup', related_name='feeds')
-    
+
     class Meta:
         db_table = 'fever_feeds'
         indexes = [
@@ -131,7 +146,7 @@ class FeedGroup(models.Model):
     """Many-to-many relationship between feeds and groups"""
     feed = models.ForeignKey(Feed, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
-    
+
     class Meta:
         db_table = 'fever_feeds_groups'
         indexes = [
@@ -148,12 +163,12 @@ class Item(models.Model):
     author = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     link = models.CharField(max_length=255, null=True, blank=True)
-    url_checksum = models.IntegerField()
-    read_on_time = models.IntegerField(default=0)
+    url_checksum = models.BigIntegerField()
+    read_on_time = models.BigIntegerField(default=0)
     is_saved = models.BooleanField(default=False)
-    created_on_time = models.IntegerField()
-    added_on_time = models.IntegerField()
-    
+    created_on_time = models.BigIntegerField()
+    added_on_time = models.BigIntegerField()
+
     class Meta:
         db_table = 'fever_items'
         indexes = [
@@ -178,11 +193,11 @@ class Link(models.Model):
     is_first = models.BooleanField(default=False)
     title = models.CharField(max_length=255, null=True, blank=True)
     url = models.CharField(max_length=255, null=True, blank=True)
-    url_checksum = models.IntegerField()
-    title_url_checksum = models.IntegerField()
+    url_checksum = models.BigIntegerField()
+    title_url_checksum = models.BigIntegerField()
     weight = models.IntegerField(default=0)
-    created_on_time = models.IntegerField()
-    
+    created_on_time = models.BigIntegerField()
+
     class Meta:
         db_table = 'fever_links'
         indexes = [

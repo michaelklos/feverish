@@ -19,33 +19,39 @@ import time
 
 def setup_demo_data():
     """Create demo user and sample feeds"""
-    
+
     print("=" * 60)
     print("Fever Django - Quick Setup")
     print("=" * 60)
-    
+
     # Create demo user
     email = "demo@example.com"
     password = "demopassword"
-    
+
     print(f"\n1. Creating demo user...")
     print(f"   Email: {email}")
     print(f"   Password: {password}")
-    
+
     # Check if user exists
     if FeverUser.objects.filter(email=email).exists():
         print(f"   ✓ User already exists")
         user = FeverUser.objects.get(email=email)
+        # Ensure user is superuser
+        if not user.is_superuser or not user.is_staff:
+            user.is_superuser = True
+            user.is_staff = True
+            user.save()
+            print(f"   ✓ Updated user to superuser")
     else:
-        user = FeverUser.objects.create_user(email=email, password=password)
+        user = FeverUser.objects.create_superuser(email=email, password=password)
         user.installed_on_time = int(time.time())
         user.save()
         print(f"   ✓ User created successfully")
-    
+
     # Calculate and display API key
     api_key = user.fever_api_key
     print(f"   API Key: {api_key}")
-    
+
     # Create groups
     print(f"\n2. Creating sample groups...")
     groups_data = [
@@ -53,7 +59,7 @@ def setup_demo_data():
         "Blogs",
         "Development"
     ]
-    
+
     groups = {}
     for group_name in groups_data:
         if Group.objects.filter(user=user, title=group_name).exists():
@@ -63,7 +69,7 @@ def setup_demo_data():
             group = Group.objects.create(user=user, title=group_name)
             groups[group_name] = group
             print(f"   ✓ Created group '{group_name}'")
-    
+
     # Create sample feeds
     print(f"\n3. Creating sample feeds...")
     feeds_data = [
@@ -86,11 +92,11 @@ def setup_demo_data():
             "group": "Development"
         },
     ]
-    
+
     for feed_data in feeds_data:
         url = feed_data["url"]
         url_checksum = int(hashlib.md5(url.encode()).hexdigest()[:8], 16)
-        
+
         if Feed.objects.filter(user=user, url=url).exists():
             print(f"   ✓ Feed '{feed_data['title']}' already exists")
             feed = Feed.objects.get(user=user, url=url)
@@ -103,13 +109,13 @@ def setup_demo_data():
                 site_url=feed_data["site_url"],
                 domain=feed_data["site_url"].replace("https://", "").replace("http://", "").split("/")[0]
             )
-            
+
             # Add to group
             if feed_data["group"] in groups:
                 feed.groups.add(groups[feed_data["group"]])
-            
+
             print(f"   ✓ Created feed '{feed_data['title']}'")
-    
+
     print(f"\n4. Setup complete!")
     print(f"\n" + "=" * 60)
     print("Next Steps:")

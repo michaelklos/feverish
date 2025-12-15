@@ -21,5 +21,6 @@ from api.urls import web_urlpatterns
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
+    path('fever/', include('api.urls')),  # Alias for Reeder and other clients
     path('', include(web_urlpatterns)),
 ]

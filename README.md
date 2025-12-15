@@ -18,15 +18,38 @@ A Python/Django port of the Fever RSS reader, maintaining full backward compatib
 - ✅ Django admin interface
 - ✅ Web-based reader interface
 
-## Quick Start
+## Quick Start (Docker)
+
+The recommended way to run Fever is using Docker.
 
 ```bash
-# Clone and navigate to the repo
-cd fever
+# Build and start the services
+docker compose up --build
 
+# Run migrations (in a new terminal)
+docker compose run --rm web python manage.py migrate
+
+# Set up demo data (optional)
+docker compose run --rm web python setup_demo.py
+
+# Refresh feeds
+docker compose run --rm web python manage.py refresh_feeds --user demo@example.com
+
+# Visit http://localhost:8000/
+# Login: demo@example.com / demopassword
+```
+
+## Quick Start (Local Development)
+
+If you prefer running without Docker:
+
+```bash
 # Install dependencies
 pip install uv
 uv sync
+
+# Install pre-commit hooks (runs tests before commit)
+uv run pre-commit install
 
 # Run migrations
 uv run python manage.py migrate
@@ -34,14 +57,8 @@ uv run python manage.py migrate
 # Set up demo data (optional)
 uv run python setup_demo.py
 
-# Refresh feeds
-uv run python manage.py refresh_feeds --user demo@example.com
-
 # Start server
 uv run python manage.py runserver
-
-# Visit http://localhost:8000/
-# Login: demo@example.com / demopassword
 ```
 
 ## Requirements
@@ -69,6 +86,9 @@ pip install uv
 
 # Install project dependencies
 uv sync
+
+# Install pre-commit hooks (optional, for development)
+uv run pre-commit install
 ```
 
 ### 3. Configure Database
@@ -221,7 +241,7 @@ The following Fever API v3 endpoints are supported:
   - `?unread_item_ids` - Get unread item IDs
   - `?saved_item_ids` - Get saved item IDs
   - `?links` - Get hot links
-  
+
 - Mark operations:
   - `mark=item&as=read&id=123` - Mark item as read
   - `mark=item&as=unread&id=123` - Mark item as unread

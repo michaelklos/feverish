@@ -8,4 +8,18 @@ dependencies = [
     "djangorestframework>=3.16.1",
     "feedparser>=6.0.12",
     "python-dateutil>=2.9.0.post0",
+    "gunicorn>=23.0.0",
+    "psycopg2-binary>=2.9.9",
+    "dj-database-url>=2.3.0",
+    "whitenoise>=6.8.2",
+    "pytest>=8.0.0",
+    "pre-commit>=3.6.0",
+    "requests>=2.31.0",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["api", "fever_django"]
