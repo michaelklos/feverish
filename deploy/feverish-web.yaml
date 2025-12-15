@@ -3,7 +3,7 @@ name: feverish-web
 resourceGroup: feverish-rg
 type: Microsoft.App/containerApps
 properties:
-  managedEnvironmentId: $ENV_ID
+  managedEnvironmentId: "$ENV_ID"
   configuration:
     activeRevisionsMode: Single
     ingress:
@@ -13,16 +13,16 @@ properties:
       - name: db-url
         value: sqlite:////data/db.sqlite3
       - name: secret-key
-        value: $SECRET_KEY
+        value: "$SECRET_KEY"
       - name: acr-password
-        value: $ACR_PASSWORD
+        value: "$ACR_PASSWORD"
     registries:
       - server: kloshost.azurecr.io
         username: kloshost
         passwordSecretRef: acr-password
   template:
     containers:
-      - image: $IMAGE_WEB
+      - image: "$IMAGE_WEB"
         name: feverish-web
         env:
           - name: DATABASE_URL

@@ -3,7 +3,7 @@ name: feverish-worker
 resourceGroup: feverish-rg
 type: Microsoft.App/jobs
 properties:
-  environmentId: $ENV_ID
+  environmentId: "$ENV_ID"
   configuration:
     triggerType: Schedule
     scheduleTriggerConfig:
@@ -16,16 +16,16 @@ properties:
       - name: db-url
         value: sqlite:////data/db.sqlite3
       - name: secret-key
-        value: $SECRET_KEY
+        value: "$SECRET_KEY"
       - name: acr-password
-        value: $ACR_PASSWORD
+        value: "$ACR_PASSWORD"
     registries:
       - server: kloshost.azurecr.io
         username: kloshost
         passwordSecretRef: acr-password
   template:
     containers:
-      - image: $IMAGE_WORKER
+      - image: "$IMAGE_WORKER"
         name: feverish-worker
         command: ["python", "manage.py", "refresh_feeds"]
         env:
