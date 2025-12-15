@@ -1,7 +1,3 @@
-location: eastus
-name: feverish-web
-resourceGroup: feverish-rg
-type: Microsoft.App/containerApps
 properties:
   managedEnvironmentId: "$ENV_ID"
   configuration:

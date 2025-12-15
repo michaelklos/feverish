@@ -33,6 +33,9 @@ export ACR_PASSWORD
 # Deploy Web App
 echo "Deploying Web App..."
 envsubst < deploy/feverish-web.yaml > deploy/feverish-web.generated.yaml
+echo "--- Generated Web YAML ---"
+cat deploy/feverish-web.generated.yaml
+echo "--------------------------"
 az containerapp create \
   --name feverish-web \
   --resource-group $RG \
@@ -41,6 +44,9 @@ az containerapp create \
 # Deploy Worker Job
 echo "Deploying Worker Job..."
 envsubst < deploy/feverish-worker.yaml > deploy/feverish-worker.generated.yaml
+echo "--- Generated Worker YAML ---"
+cat deploy/feverish-worker.generated.yaml
+echo "-----------------------------"
 az containerapp job create \
   --name feverish-worker \
   --resource-group $RG \
