@@ -129,6 +129,13 @@ class Feed(models.Model):
     last_added_on_time = models.BigIntegerField(default=0)
     groups = models.ManyToManyField(Group, through='FeedGroup', related_name='feeds')
 
+    def save(self, *args, **kwargs):
+        if not self.url_checksum and self.url:
+            # Calculate checksum compatible with BigIntegerField (signed 64-bit)
+            # We take first 15 hex chars (60 bits) to be safe
+            self.url_checksum = int(hashlib.md5(self.url.encode()).hexdigest()[:15], 16)
+        super().save(*args, **kwargs)
+
     class Meta:
         db_table = 'fever_feeds'
         indexes = [

@@ -48,6 +48,7 @@ class FeedAdmin(admin.ModelAdmin):
     list_display = ('title', 'url', 'user', 'is_spark', 'last_refreshed_date')
     list_filter = ('user', 'is_spark')
     search_fields = ('title', 'url', 'domain')
+    readonly_fields = ('url_checksum', 'last_refreshed_on_time', 'last_updated_on_time', 'last_added_on_time')
     raw_id_fields = ('user', 'favicon')
     readonly_fields = ('last_refreshed_date', 'last_updated_date', 'last_added_date')
 
