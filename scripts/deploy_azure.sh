@@ -29,6 +29,7 @@ fi
 export IMAGE_WEB
 export IMAGE_WORKER
 export ACR_PASSWORD
+export DATABASE_URL
 
 # Deploy Web App
 echo "Deploying Web App..."

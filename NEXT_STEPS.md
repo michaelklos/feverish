@@ -41,10 +41,10 @@ az containerapp exec \
 *   **Registry:** `kloshost.azurecr.io` (Shared Registry in `personal-rg`).
 *   **Environment:** `klos-apps-env` (Shared Environment in `personal-rg`).
 *   **Resource Group:** `feverish-rg` (Contains the Container Apps and Storage).
-*   **Database:** SQLite.
-    *   **Persistence:** Stored on Azure Files share named `feverishdata`.
-    *   **Mount Path:** `/data` inside containers.
-    *   **Note:** SQLite on Azure Files works for low-traffic single-writer scenarios (like this), but be aware of potential locking issues if scaling up.
+*   **Database:** PostgreSQL (Neon Serverless).
+    *   **Persistence:** Managed by Neon.tech.
+    *   **Connection:** Via `DATABASE_URL` secret.
+    *   **Reason:** Switched from SQLite on Azure Files due to severe file locking issues with container concurrency.
 
 ### Deployment Pipeline
 *   **Method:** GitHub Actions (`.github/workflows/deploy.yml`).

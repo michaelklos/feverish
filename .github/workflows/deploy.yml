@@ -78,6 +78,7 @@ jobs:
           IMAGE_TAG: ${{ env.ACR_NAME }}.azurecr.io/${{ env.AZURE_WEBAPP_NAME }}:${{ github.sha }}
           SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           chmod +x scripts/deploy_azure.sh
           ./scripts/deploy_azure.sh "$IMAGE_TAG" "$IMAGE_TAG"

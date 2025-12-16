@@ -9,7 +9,7 @@ properties:
       allowInsecure: false
     secrets:
       - name: db-url
-        value: sqlite:////data/db.sqlite3
+        value: "$DATABASE_URL"
       - name: secret-key
         value: "$SECRET_KEY"
       - name: acr-password
@@ -34,10 +34,3 @@ properties:
             value: "news.klos.wtf"
           - name: DEBUG
             value: "False"
-        volumeMounts:
-          - volumeName: azure-file-volume
-            mountPath: /data
-    volumes:
-      - name: azure-file-volume
-        storageType: AzureFile
-        storageName: feverishdata
