@@ -111,9 +111,9 @@ class Feed(models.Model):
     """RSS/Atom feeds"""
     user = models.ForeignKey(FeverUser, on_delete=models.CASCADE, related_name='feeds')
     favicon = models.ForeignKey(Favicon, on_delete=models.SET_NULL, null=True, blank=True)
-    title = models.CharField(max_length=255, null=True, blank=True)
+    title = models.CharField(max_length=255)
     url = models.CharField(max_length=255)
-    url_checksum = models.BigIntegerField(unique=True)
+    url_checksum = models.BigIntegerField(unique=True, blank=True)
     site_url = models.CharField(max_length=255, null=True, blank=True)
     domain = models.CharField(max_length=255, null=True, blank=True)
     requires_auth = models.BooleanField(default=False)
