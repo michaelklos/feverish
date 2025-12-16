@@ -17,18 +17,15 @@ def login_view(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
-        
+
         # Authenticate using email instead of username
-        try:
-            user = FeverUser.objects.get(email=email)
-            if user.check_password(password):
-                login(request, user)
-                return redirect('index')
-        except FeverUser.DoesNotExist:
-            pass
-        
+        user = authenticate(request, username=email, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('index')
+
         return render(request, 'login.html', {'error': 'Invalid credentials'})
-    
+
     return render(request, 'login.html')
 
 

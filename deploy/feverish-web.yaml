@@ -39,4 +39,4 @@ properties:
           - name: CSRF_TRUSTED_ORIGINS
             value: "https://news.klos.wtf"
           - name: DEBUG
-            value: "True"
+            value: "False"
