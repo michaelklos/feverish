@@ -12,5 +12,9 @@ RUN pip install --no-cache-dir .
 # Expose the port the app runs on
 EXPOSE 8000
 
-# Run the application
-CMD ["gunicorn", "feverish.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Copy entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Run the application via entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]

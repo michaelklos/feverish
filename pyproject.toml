@@ -15,6 +15,7 @@ dependencies = [
     "pytest>=8.0.0",
     "pre-commit>=3.6.0",
     "requests>=2.31.0",
+    "django-axes>=6.0.0",
 ]
 
 [build-system]
