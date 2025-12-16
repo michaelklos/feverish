@@ -101,9 +101,15 @@ WSGI_APPLICATION = 'feverish.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config(
         default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
-        conn_max_age=600
+        conn_max_age=0  # Disable persistent connections to avoid locking issues on Azure Files
     )
 }
+
+# SQLite optimization for Azure Files
+if 'sqlite' in DATABASES['default']['ENGINE']:
+    DATABASES['default']['OPTIONS'] = {
+        'timeout': 30,  # Wait up to 30 seconds for the lock
+    }
 
 
 # Password validation
