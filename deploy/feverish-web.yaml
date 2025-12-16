@@ -7,6 +7,10 @@ properties:
       targetPort: 8000
       transport: auto
       allowInsecure: false
+      customDomains:
+        - name: news.klos.wtf
+          certificateId: /subscriptions/c37baf32-cec3-452b-9640-18ec4100c146/resourceGroups/personal-rg/providers/Microsoft.App/managedEnvironments/klos-apps-env/managedCertificates/news-klos-wtf-cert
+          bindingType: SniEnabled
     secrets:
       - name: db-url
         value: "$DATABASE_URL"
