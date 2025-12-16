@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from .models import FeverUser, Feed, Group, Item
+from .utils import refresh_feed
 
 
 def index(request):
@@ -33,3 +34,16 @@ def logout_view(request):
     """Logout"""
     logout(request)
     return redirect('login')
+
+
+@login_required
+def refresh_feeds_view(request):
+    """Manually refresh all feeds for the current user"""
+    if request.method == 'POST':
+        feeds = Feed.objects.filter(user=request.user)
+        for feed in feeds:
+            try:
+                refresh_feed(feed)
+            except Exception:
+                pass
+    return redirect('index')

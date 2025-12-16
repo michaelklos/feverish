@@ -10,4 +10,5 @@ web_urlpatterns = [
     path('', web_views.index, name='index'),
     path('login/', web_views.login_view, name='login'),
     path('logout/', web_views.logout_view, name='logout'),
+    path('refresh/', web_views.refresh_feeds_view, name='refresh_feeds'),
 ]

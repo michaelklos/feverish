@@ -24,7 +24,7 @@ properties:
         passwordSecretRef: acr-password
   template:
     scale:
-      minReplicas: 1
+      minReplicas: 0
       maxReplicas: 1
     containers:
       - image: "$IMAGE_WEB"

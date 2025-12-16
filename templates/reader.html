@@ -101,7 +101,7 @@
             <h2>Welcome to Fever RSS Reader</h2>
             <p>This is a modern Python/Django implementation of the Fever RSS reader, maintaining full backward compatibility with the Fever API v3.</p>
             <p>You can use this with iOS/macOS apps like Reeder, ReadKit, and other Fever-compatible RSS readers.</p>
-            
+
             <div class="api-info">
                 <h3>Getting Started</h3>
                 <ul>
@@ -109,7 +109,7 @@
                     <li><strong>Admin Panel:</strong> <a href="{% url 'admin:index' %}">Manage feeds and groups</a></li>
                     <li><strong>Your Email:</strong> <code>{{ request.user.email }}</code></li>
                 </ul>
-                
+
                 <h3 style="margin-top: 20px;">Configure Your RSS Reader</h3>
                 <p style="margin-top: 10px;">In your Fever-compatible app (like Reeder):</p>
                 <ul>
@@ -117,12 +117,18 @@
                     <li><strong>Email:</strong> Your registered email address</li>
                     <li><strong>Password:</strong> Your account password</li>
                 </ul>
-                
+
                 <h3 style="margin-top: 20px;">Next Steps</h3>
                 <ul>
                     <li>Add feeds via the <a href="{% url 'admin:index' %}">Admin Panel</a></li>
                     <li>Organize feeds into groups</li>
-                    <li>Run: <code>uv run python manage.py refresh_feeds</code> to fetch articles</li>
+                    <li>
+                        <form action="{% url 'refresh_feeds' %}" method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" style="background: none; border: none; color: #0066cc; text-decoration: underline; cursor: pointer; padding: 0; font-size: inherit; font-family: inherit;">Refresh all feeds now</button>
+                        </form>
+                        (or wait for the hourly schedule)
+                    </li>
                     <li>Connect your RSS reader app using the API endpoint above</li>
                 </ul>
             </div>
