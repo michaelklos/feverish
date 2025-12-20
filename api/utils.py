@@ -1,5 +1,6 @@
 import feedparser
 import time
+import calendar
 import hashlib
 from urllib.parse import urlparse
 from .models import Feed, Item
@@ -52,7 +53,8 @@ def refresh_feed(feed):
 
         published_time = entry.get('published_parsed') or entry.get('updated_parsed')
         if published_time:
-            created_on_time = int(time.mktime(published_time))
+            # feedparser returns UTC struct_time, so use timegm to get correct timestamp
+            created_on_time = int(calendar.timegm(published_time))
         else:
             created_on_time = current_time
 
