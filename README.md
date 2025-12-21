@@ -10,7 +10,7 @@ A Python/Django implementation of the Fever API, maintaining full backward compa
 - ✅ Works with Reeder and other Fever-compatible RSS readers
 - ✅ Modern Python/Django codebase
 - ✅ Database-agnostic (SQLite, PostgreSQL, MySQL supported)
-- ✅ Easy deployment with Docker or standard Python tools
+- ✅ Easy deployment with Docker or Azure Container Apps
 - ✅ RSS/Atom feed parsing with feedparser
 - ✅ Multi-user support
 - ✅ Feed groups and organization
@@ -18,7 +18,44 @@ A Python/Django implementation of the Fever API, maintaining full backward compa
 - ✅ Hot links calculation
 - ✅ Comprehensive test suite
 - ✅ Django admin interface
-- ✅ Basic web-based reader interface (for testing/admin)
+- ✅ Basic web-based reader interface with "Refresh All" capability
+
+## Azure Deployment (Recommended)
+
+This project is optimized for deployment on Azure Container Apps (ACA).
+
+### Prerequisites
+- Azure CLI (`az`)
+- GitHub CLI (`gh`)
+- An Azure Subscription
+
+### Deployment Steps
+1.  **Login to Azure:**
+    ```bash
+    az login
+    ```
+2.  **Run the Setup Script:**
+    ```bash
+    ./scripts/setup_azure_infra.sh
+    ```
+    This script will:
+    - Create a Resource Group (`feverish-rg`)
+    - Create an Azure Container Registry (ACR)
+    - Create a PostgreSQL Database (Neon or Azure Database)
+    - Configure the necessary secrets
+
+3.  **Deploy the App:**
+    The deployment is handled via GitHub Actions. Pushing to the `main` branch will trigger a build and deployment.
+
+    To deploy manually from your machine:
+    ```bash
+    ./scripts/deploy_azure.sh <web-image-tag> <worker-image-tag>
+    ```
+
+### Architecture
+- **Web App:** Runs the Django application (Scale-to-Zero enabled for cost savings).
+- **Worker Job:** Runs scheduled feed refreshes (hourly).
+- **Database:** PostgreSQL (via Neon or Azure).
 
 ## Quick Start (Docker)
 
@@ -283,7 +320,12 @@ uv run python manage.py migrate
 
 ## Deployment
 
-For production deployment:
+### Azure Container Apps (Preferred)
+See the [Azure Deployment](#azure-deployment-recommended) section above. The project includes full infrastructure-as-code support for Azure in the `deploy/` and `scripts/` directories.
+
+### Generic Production Deployment
+
+For other production environments (VPS, DigitalOcean, etc.):
 
 1. Set `DEBUG = False` in `fever_django/settings.py`
 2. Set a secure `SECRET_KEY`

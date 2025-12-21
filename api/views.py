@@ -6,6 +6,9 @@ from .models import FeverUser, Feed, Group, Item, Favicon, FeedGroup, Link
 from .utils import refresh_feed
 import hashlib
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def authenticate_api_key(api_key):
@@ -29,119 +32,153 @@ def authenticate_api_key(api_key):
 def fever_api(request):
     """
     Fever API endpoint compatible with version 3
-    Supports both GET and POST parameters as per Fever spec
     """
-    # Merge GET and POST parameters
+    # Authentication
     params = request.GET.copy()
     params.update(request.POST)
-
-    # Base response
-    response_data = {
-        'api_version': 3,
-        'auth': 0
-    }
-
-    # Authentication
     api_key = params.get('api_key', '')
     user = authenticate_api_key(api_key)
 
-    if user:
-        response_data['auth'] = 1
-        user.last_session_on_time = int(time.time())
-        user.save(update_fields=['last_session_on_time'])
-    else:
-        # Return auth failure immediately
-        return JsonResponse(response_data)
+    if not user:
+        return JsonResponse({'api_version': 3, 'auth': 0})
 
-    # Refresh feeds if requested
-    if 'refresh' in params:
-        print("Refresh requested via API")
-        feeds = Feed.objects.filter(user=user)
+    handler = FeverAPIHandler(request, user)
+    response_data = handler.process()
+
+    return JsonResponse(response_data)
+
+
+class FeverAPIHandler:
+    def __init__(self, request, user):
+        self.request = request
+        self.user = user
+        self.params = request.GET.copy()
+        self.params.update(request.POST)
+        self.response_data = {
+            'api_version': 3,
+            'auth': 1
+        }
+
+    def process(self):
+        """Process the request and return response data"""
+        # Update last session time
+        self.user.last_session_on_time = int(time.time())
+        self.user.save(update_fields=['last_session_on_time'])
+
+        # Handle actions
+        if 'refresh' in self.params:
+            self.handle_refresh()
+
+        if 'mark' in self.params:
+            self.handle_mark()
+
+        # Add last refreshed time
+        last_refreshed = Feed.objects.filter(user=self.user).order_by('-last_refreshed_on_time').first()
+        if last_refreshed:
+            self.response_data['last_refreshed_on_time'] = last_refreshed.last_refreshed_on_time
+
+        # Data retrieval
+        if 'groups' in self.params:
+            self.get_groups()
+
+        if 'feeds' in self.params or 'groups' in self.params:
+            self.get_feeds()
+
+        if 'favicons' in self.params:
+            self.get_favicons()
+
+        if 'items' in self.params:
+            self.get_items()
+
+        if 'unread_item_ids' in self.params:
+            self.get_unread_item_ids()
+
+        if 'saved_item_ids' in self.params:
+            self.get_saved_item_ids()
+
+        if 'links' in self.params:
+            self.get_links()
+
+        return self.response_data
+
+    def handle_refresh(self):
+        logger.info(f"Refresh requested via API for user {self.user.email}")
+        feeds = Feed.objects.filter(user=self.user)
         for feed in feeds:
             try:
                 refresh_feed(feed)
             except Exception as e:
-                print(f"Error refreshing feed {feed.id}: {e}")
-                # Ignore errors during refresh to prevent API failure
+                logger.error(f"Error refreshing feed {feed.id}: {e}")
                 pass
 
-    # Get last refreshed time
-    last_refreshed = Feed.objects.filter(user=user).order_by('-last_refreshed_on_time').first()
-    if last_refreshed:
-        response_data['last_refreshed_on_time'] = last_refreshed.last_refreshed_on_time
+    def handle_mark(self):
+        if 'as' not in self.params or 'id' not in self.params:
+            return
 
-    # Handle mark operations (read/unread, saved/unsaved)
-    if 'mark' in params and 'as' in params and 'id' in params:
-        mark_type = params['mark']
-        as_type = params['as']
-        item_ids = params['id']
-        before = params.get('before')
+        mark_type = self.params['mark']
+        as_type = self.params['as']
+        item_ids = self.params['id']
+        before = self.params.get('before')
 
         if mark_type == 'item':
             ids = [int(i) for i in item_ids.split(',')]
-            items = Item.objects.filter(id__in=ids, feed__user=user)
-
             if as_type == 'read':
-                items.update(read_on_time=int(time.time()))
+                Item.objects.mark_as_read(self.user, ids)
             elif as_type == 'unread':
-                items.update(read_on_time=0)
+                Item.objects.mark_as_unread(self.user, ids)
             elif as_type == 'saved':
-                items.update(is_saved=True)
+                Item.objects.mark_as_saved(self.user, ids)
             elif as_type == 'unsaved':
-                items.update(is_saved=False)
+                Item.objects.mark_as_unsaved(self.user, ids)
 
         elif mark_type == 'feed':
             feed_id = int(item_ids)
-            items = Item.objects.filter(feed_id=feed_id, feed__user=user)
-            if before:
-                items = items.filter(created_on_time__lte=int(before))
-
             if as_type == 'read':
-                items.update(read_on_time=int(time.time()))
+                Item.objects.mark_feed_as_read(self.user, feed_id, before)
             elif as_type == 'unread':
+                items = Item.objects.filter(feed_id=feed_id, feed__user=self.user)
+                if before:
+                    items = items.filter(created_on_time__lte=int(before))
                 items.update(read_on_time=0)
 
         elif mark_type == 'group':
             group_id = int(item_ids)
-            feed_ids = FeedGroup.objects.filter(group_id=group_id, group__user=user).values_list('feed_id', flat=True)
-            items = Item.objects.filter(feed_id__in=feed_ids)
-            if before:
-                items = items.filter(created_on_time__lte=int(before))
-
             if as_type == 'read':
-                items.update(read_on_time=int(time.time()))
+                Item.objects.mark_group_as_read(self.user, group_id, before)
             elif as_type == 'unread':
+                feed_ids = FeedGroup.objects.filter(group_id=group_id, group__user=self.user).values_list('feed_id', flat=True)
+                items = Item.objects.filter(feed_id__in=feed_ids)
+                if before:
+                    items = items.filter(created_on_time__lte=int(before))
                 items.update(read_on_time=0)
 
-    # Groups
-    if 'groups' in params:
-        groups = Group.objects.filter(user=user).values('id', 'title')
-        response_data['groups'] = [
+    def get_groups(self):
+        groups = Group.objects.filter(user=self.user).values('id', 'title')
+        self.response_data['groups'] = [
             {'id': g['id'], 'title': g['title']}
             for g in groups
         ]
 
-    # Feeds
-    if 'feeds' in params or 'groups' in params:
-        feeds = Feed.objects.filter(user=user).select_related('favicon')
+    def get_feeds(self):
+        feeds = Feed.objects.filter(user=self.user).select_related('favicon')
         feeds_data = []
 
         for feed in feeds:
             feeds_data.append({
                 'id': feed.id,
                 'favicon_id': feed.favicon_id if feed.favicon_id else 0,
-                'title': feed.title or feed.url,
+                'title': feed.user_title or feed.title or feed.url,
                 'url': feed.url,
                 'site_url': feed.site_url or '',
                 'is_spark': 1 if feed.is_spark else 0,
                 'last_updated_on_time': feed.last_updated_on_time
             })
 
-        if 'feeds' in params:
-            response_data['feeds'] = feeds_data
+        if 'feeds' in self.params:
+            self.response_data['feeds'] = feeds_data
 
         # Feed-group relationships
-        feed_groups = FeedGroup.objects.filter(feed__user=user, feed__is_spark=False).values('group_id', 'feed_id')
+        feed_groups = FeedGroup.objects.filter(feed__user=self.user, feed__is_spark=False).values('group_id', 'feed_id')
 
         # Group feeds by group_id
         groups_dict = {}
@@ -151,46 +188,44 @@ def fever_api(request):
                 groups_dict[group_id] = []
             groups_dict[group_id].append(str(fg['feed_id']))
 
-        response_data['feeds_groups'] = [
+        self.response_data['feeds_groups'] = [
             {'group_id': gid, 'feed_ids': ','.join(fids)}
             for gid, fids in groups_dict.items()
         ]
 
-    # Favicons
-    if 'favicons' in params:
+    def get_favicons(self):
         favicons = Favicon.objects.all().values('id', 'cache')
-        response_data['favicons'] = [
+        self.response_data['favicons'] = [
             {'id': f['id'], 'data': f['cache']}
             for f in favicons
         ]
 
-    # Items
-    if 'items' in params:
-        items_qs = Item.objects.filter(feed__user=user)
+    def get_items(self):
+        items_qs = Item.objects.filter(feed__user=self.user)
 
-        response_data['total_items'] = items_qs.count()
+        self.response_data['total_items'] = items_qs.count()
 
         # Filter by feed_ids or group_ids
-        if 'feed_ids' in params:
-            feed_ids = [int(i) for i in params['feed_ids'].split(',')]
+        if 'feed_ids' in self.params:
+            feed_ids = [int(i) for i in self.params['feed_ids'].split(',')]
             items_qs = items_qs.filter(feed_id__in=feed_ids)
 
-        if 'group_ids' in params:
-            group_ids = [int(i) for i in params['group_ids'].split(',')]
+        if 'group_ids' in self.params:
+            group_ids = [int(i) for i in self.params['group_ids'].split(',')]
             feed_ids = FeedGroup.objects.filter(group_id__in=group_ids).values_list('feed_id', flat=True)
             items_qs = items_qs.filter(feed_id__in=feed_ids)
 
         # Pagination
-        if 'max_id' in params:
-            max_id = int(params['max_id'])
+        if 'max_id' in self.params:
+            max_id = int(self.params['max_id'])
             if max_id > 0:
                 items_qs = items_qs.filter(id__lt=max_id)
             items_qs = items_qs.order_by('-id')[:50]
-        elif 'with_ids' in params:
-            item_ids = [int(i) for i in params['with_ids'].split(',')]
+        elif 'with_ids' in self.params:
+            item_ids = [int(i) for i in self.params['with_ids'].split(',')]
             items_qs = items_qs.filter(id__in=item_ids)
-        elif 'since_id' in params:
-            since_id = int(params['since_id'])
+        elif 'since_id' in self.params:
+            since_id = int(self.params['since_id'])
             items_qs = items_qs.filter(id__gt=since_id).order_by('id')[:50]
         else:
             items_qs = items_qs.order_by('-id')[:50]
@@ -209,28 +244,25 @@ def fever_api(request):
                 'created_on_time': item.created_on_time
             })
 
-        response_data['items'] = items_data
+        self.response_data['items'] = items_data
 
-    # Unread item IDs
-    if 'unread_item_ids' in params:
+    def get_unread_item_ids(self):
         unread_ids = Item.objects.filter(
-            feed__user=user,
+            feed__user=self.user,
             read_on_time=0
         ).values_list('id', flat=True)
-        response_data['unread_item_ids'] = ','.join(map(str, unread_ids))
+        self.response_data['unread_item_ids'] = ','.join(map(str, unread_ids))
 
-    # Saved item IDs
-    if 'saved_item_ids' in params:
+    def get_saved_item_ids(self):
         saved_ids = Item.objects.filter(
-            feed__user=user,
+            feed__user=self.user,
             is_saved=True
         ).values_list('id', flat=True)
-        response_data['saved_item_ids'] = ','.join(map(str, saved_ids))
+        self.response_data['saved_item_ids'] = ','.join(map(str, saved_ids))
 
-    # Links (for hot calculation)
-    if 'links' in params:
-        links = Link.objects.filter(feed__user=user).order_by('-weight')[:50]
-        response_data['links'] = [
+    def get_links(self):
+        links = Link.objects.filter(feed__user=self.user).order_by('-weight')[:50]
+        self.response_data['links'] = [
             {
                 'id': link.id,
                 'feed_id': link.feed_id,
@@ -242,5 +274,3 @@ def fever_api(request):
             }
             for link in links
         ]
-
-    return JsonResponse(response_data)

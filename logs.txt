@@ -1,0 +1,15 @@
+{"TimeStamp": "2025-12-16T04:02:34.59612", "Log": "Connecting to the container 'feverish-web'..."}
+{"TimeStamp": "2025-12-16T04:02:34.65968", "Log": "Successfully Connected to container: 'feverish-web' [Revision: 'feverish-web--0000011', Replica: 'feverish-web--0000011-799b8b4b97-tvcfc']"}
+{"TimeStamp": "2025-12-16T03:54:10.8089802+00:00", "Log": "F Applying database migrations..."}
+{"TimeStamp": "2025-12-16T03:54:11.7035153+00:00", "Log": "F Operations to perform:"}
+{"TimeStamp": "2025-12-16T03:54:11.7035582+00:00", "Log": "F   Apply all migrations: admin, api, auth, axes, contenttypes, sessions"}
+{"TimeStamp": "2025-12-16T03:54:11.7035847+00:00", "Log": "F Running migrations:"}
+{"TimeStamp": "2025-12-16T03:54:11.7035868+00:00", "Log": "F   No migrations to apply."}
+{"TimeStamp": "2025-12-16T03:54:11.7984293+00:00", "Log": "F Collecting static files..."}
+{"TimeStamp": "2025-12-16T03:54:12.0955854+00:00", "Log": "F"}
+{"TimeStamp": "2025-12-16T03:54:12.095644+00:00", "Log": "F 289 static files copied to '/app/staticfiles'."}
+{"TimeStamp": "2025-12-16T03:54:12.1517851+00:00", "Log": "F Starting Gunicorn..."}
+{"TimeStamp": "2025-12-16T03:54:12.235337+00:00", "Log": "F [2025-12-16 03:54:12 +0000] [1] [INFO] Starting gunicorn 23.0.0"}
+{"TimeStamp": "2025-12-16T03:54:12.2355799+00:00", "Log": "F [2025-12-16 03:54:12 +0000] [1] [INFO] Listening at: http://0.0.0.0:8000 (1)"}
+{"TimeStamp": "2025-12-16T03:54:12.2355902+00:00", "Log": "F [2025-12-16 03:54:12 +0000] [1] [INFO] Using worker: sync"}
+{"TimeStamp": "2025-12-16T03:54:12.2386154+00:00", "Log": "F [2025-12-16 03:54:12 +0000] [9] [INFO] Booting worker with pid: 9"}

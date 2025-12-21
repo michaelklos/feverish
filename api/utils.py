@@ -2,8 +2,11 @@ import feedparser
 import time
 import calendar
 import hashlib
+import logging
 from urllib.parse import urlparse
 from .models import Feed, Item
+
+logger = logging.getLogger(__name__)
 
 def calculate_checksum(text):
     """Calculate checksum for URL/text"""
@@ -15,7 +18,7 @@ def calculate_checksum(text):
 
 def refresh_feed(feed):
     """Fetch and parse RSS feed"""
-    print(f"Refreshing feed: {feed.title or feed.url}")
+    logger.info(f"Refreshing feed: {feed.title or feed.url}")
     parsed = feedparser.parse(feed.url)
 
     current_time = int(time.time())
@@ -75,5 +78,5 @@ def refresh_feed(feed):
         feed.last_updated_on_time = current_time
         feed.save()
 
-    print(f"  Added {new_items_count} new items")
+    logger.info(f"  Added {new_items_count} new items to {feed.title or feed.url}")
     return new_items_count

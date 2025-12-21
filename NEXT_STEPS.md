@@ -1,22 +1,22 @@
 # Next Steps & Session Handoff
 
 ## Project Status: "Feverish" (Self-Hosted RSS Reader)
-**Date:** December 15, 2025
+**Date:** December 21, 2025
 **State:** Deployed & Operational on Azure Container Apps (ACA).
 
 The application has been successfully refactored from "Fever" to "Feverish", containerized, and deployed to Azure using a shared infrastructure model.
 
 ## 🚀 Immediate Next Actions
 
-### 1. Create Admin User (Required)
-The application is running, but has no users. You must create a superuser to log in and configure feeds.
-**Command:**
-```bash
-az containerapp exec \
-  --name feverish-web \
-  --resource-group feverish-rg \
-  --command "python manage.py createsuperuser"
-```
+### 1. Create Admin User (Likely Complete)
+*   **Status:** ✅ Assumed Complete (User is active).
+*   **Command (if needed):**
+    ```bash
+    az containerapp exec \
+      --name feverish-web \
+      --resource-group feverish-rg \
+      --command "python manage.py createsuperuser"
+    ```
 
 ### 2. Configure Custom Domain
 **Goal:** Map a custom domain (e.g., `reader.klos.com`) to the Container App.
@@ -28,11 +28,21 @@ az containerapp exec \
 
 ### 3. Verify Reeder Integration
 **Goal:** Connect the Reeder app (iOS/Mac) to the Fever API.
-*   **Endpoint:** `https://<your-domain>/fever/`
-*   **Auth:** Uses the custom "Fever API Key" generated in the Django Admin interface (not the Django password).
-*   **Task:** Log in to Django Admin -> Create Fever User -> Set Password -> Try connecting Reeder.
+*   **Endpoint:** `https://news.klos.wtf/fever/`
+*   **Status:** ✅ Verified & Fixed
+    *   **Auth:** Working.
+    *   **Sync:** Working.
+    *   **Timestamps:** Fixed timezone drift issue (switched to `calendar.timegm`).
+    *   **Ghost Items:** Addressed by timestamp fix.
 
 ---
+
+## 📜 Recent Changelog
+*   **Feature:** Added "Refresh All" button to the web interface.
+*   **Fix:** Corrected UTC timestamp calculation to prevent articles from appearing with wrong times in Reeder.
+*   **Fix:** Resolved `DATABASE_URL` injection issue in deployment.
+*   **Optimization:** Set `minReplicas: 0` to minimize costs (Scale-to-Zero enabled).
+*   **Cleanup:** Removed unused Azure Storage Account.
 
 ## 🏗 Infrastructure Details (Non-Obvious Context)
 

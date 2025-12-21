@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 import hashlib
+import time
 
 
 class FeverUserManager(BaseUserManager):
@@ -111,7 +112,8 @@ class Feed(models.Model):
     """RSS/Atom feeds"""
     user = models.ForeignKey(FeverUser, on_delete=models.CASCADE, related_name='feeds')
     favicon = models.ForeignKey(Favicon, on_delete=models.SET_NULL, null=True, blank=True)
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, null=True, blank=True)  # Canonical title from RSS
+    user_title = models.CharField(max_length=255, null=True, blank=True)  # User-defined display title
     url = models.CharField(max_length=255)
     url_checksum = models.BigIntegerField(unique=True, blank=True)
     site_url = models.CharField(max_length=255, null=True, blank=True)
@@ -162,6 +164,50 @@ class FeedGroup(models.Model):
         unique_together = ['feed', 'group']
 
 
+class ItemManager(models.Manager):
+    def mark_as_read(self, user, item_ids):
+        """Mark specific items as read"""
+        if not item_ids:
+            return 0
+        return self.filter(id__in=item_ids, feed__user=user).update(read_on_time=int(time.time()))
+
+    def mark_as_unread(self, user, item_ids):
+        """Mark specific items as unread"""
+        if not item_ids:
+            return 0
+        return self.filter(id__in=item_ids, feed__user=user).update(read_on_time=0)
+
+    def mark_as_saved(self, user, item_ids):
+        """Mark specific items as saved"""
+        if not item_ids:
+            return 0
+        return self.filter(id__in=item_ids, feed__user=user).update(is_saved=True)
+
+    def mark_as_unsaved(self, user, item_ids):
+        """Mark specific items as unsaved"""
+        if not item_ids:
+            return 0
+        return self.filter(id__in=item_ids, feed__user=user).update(is_saved=False)
+
+    def mark_feed_as_read(self, user, feed_id, before_time=None):
+        """Mark all items in a feed as read"""
+        qs = self.filter(feed_id=feed_id, feed__user=user)
+        if before_time:
+            qs = qs.filter(created_on_time__lte=int(before_time))
+        return qs.update(read_on_time=int(time.time()))
+
+    def mark_group_as_read(self, user, group_id, before_time=None):
+        """Mark all items in a group as read"""
+        # We need to import FeedGroup here to avoid circular imports if it was at top level,
+        # but since they are in the same file, we can just use the model name string or class if defined.
+        # FeedGroup is defined above, so we can use it.
+        feed_ids = FeedGroup.objects.filter(group_id=group_id, group__user=user).values_list('feed_id', flat=True)
+        qs = self.filter(feed_id__in=feed_ids)
+        if before_time:
+            qs = qs.filter(created_on_time__lte=int(before_time))
+        return qs.update(read_on_time=int(time.time()))
+
+
 class Item(models.Model):
     """Feed items (articles)"""
     feed = models.ForeignKey(Feed, on_delete=models.CASCADE, related_name='items')
@@ -175,6 +221,8 @@ class Item(models.Model):
     is_saved = models.BooleanField(default=False)
     created_on_time = models.BigIntegerField()
     added_on_time = models.BigIntegerField()
+
+    objects = ItemManager()
 
     class Meta:
         db_table = 'fever_items'
