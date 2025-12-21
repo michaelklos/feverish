@@ -38,6 +38,8 @@ The application has been successfully refactored from "Fever" to "Feverish", con
 ---
 
 ## 📜 Recent Changelog
+*   **Feature:** Added "User Title" field to Feeds, allowing custom display names that persist across syncs.
+*   **Refactor:** Implemented structured logging to replace `print` statements for better Azure observability.
 *   **Feature:** Added "Refresh All" button to the web interface.
 *   **Fix:** Corrected UTC timestamp calculation to prevent articles from appearing with wrong times in Reeder.
 *   **Fix:** Resolved `DATABASE_URL` injection issue in deployment.

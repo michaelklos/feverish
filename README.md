@@ -14,6 +14,7 @@ A Python/Django implementation of the Fever API, maintaining full backward compa
 - ✅ RSS/Atom feed parsing with feedparser
 - ✅ Multi-user support
 - ✅ Feed groups and organization
+- ✅ Custom Feed Titles (override canonical RSS titles)
 - ✅ Mark items as read/unread/saved
 - ✅ Hot links calculation
 - ✅ Comprehensive test suite
