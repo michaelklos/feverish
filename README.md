@@ -2,65 +2,24 @@
 
 A Python/Django implementation of the Fever API, maintaining full backward compatibility with the Fever API v3. This allows you to use modern RSS reader apps like Reeder with a self-hosted, up-to-date backend.
 
-> **Note:** This project is primarily designed as a backend API for Fever-compatible clients (like Reeder, ReadKit, etc.). While it includes a basic web interface for administration and debugging, the web UI is "light on polish" and is not intended to be the primary way you consume your feeds.
+> **Note:** This project is primarily designed as a backend API for Fever-compatible clients (like Reeder, ReadKit, etc.). While it includes a basic web interface for administration and debugging, the web UI is minimal and not intended as the primary way to consume feeds.
 
 ## Features
 
-- ✅ Full Fever API v3 compatibility
-- ✅ Works with Reeder and other Fever-compatible RSS readers
-- ✅ Modern Python/Django codebase
-- ✅ Database-agnostic (SQLite, PostgreSQL, MySQL supported)
-- ✅ Easy deployment with Docker or Azure Container Apps
-- ✅ RSS/Atom feed parsing with feedparser
-- ✅ Multi-user support
-- ✅ Feed groups and organization
-- ✅ Custom Feed Titles (override canonical RSS titles)
-- ✅ Mark items as read/unread/saved
-- ✅ Hot links calculation
-- ✅ Comprehensive test suite
-- ✅ Django admin interface
-- ✅ Basic web-based reader interface with "Refresh All" capability
-
-## Azure Deployment (Recommended)
-
-This project is optimized for deployment on Azure Container Apps (ACA).
-
-### Prerequisites
-- Azure CLI (`az`)
-- GitHub CLI (`gh`)
-- An Azure Subscription
-
-### Deployment Steps
-1.  **Login to Azure:**
-    ```bash
-    az login
-    ```
-2.  **Run the Setup Script:**
-    ```bash
-    ./scripts/setup_azure_infra.sh
-    ```
-    This script will:
-    - Create a Resource Group (`feverish-rg`)
-    - Create an Azure Container Registry (ACR)
-    - Create a PostgreSQL Database (Neon or Azure Database)
-    - Configure the necessary secrets
-
-3.  **Deploy the App:**
-    The deployment is handled via GitHub Actions. Pushing to the `main` branch will trigger a build and deployment.
-
-    To deploy manually from your machine:
-    ```bash
-    ./scripts/deploy_azure.sh <web-image-tag> <worker-image-tag>
-    ```
-
-### Architecture
-- **Web App:** Runs the Django application (Scale-to-Zero enabled for cost savings).
-- **Worker Job:** Runs scheduled feed refreshes (hourly).
-- **Database:** PostgreSQL (via Neon or Azure).
+- Full Fever API v3 compatibility
+- Works with Reeder and other Fever-compatible RSS readers
+- Modern Python/Django codebase (Python 3.12+, Django 6.0)
+- Database-agnostic (SQLite, PostgreSQL, MySQL)
+- Easy deployment with Docker or Azure Container Apps
+- RSS/Atom feed parsing with feedparser
+- Multi-user support with custom feed titles
+- Feed groups and organization
+- Mark items as read/unread/saved
+- Hot links calculation
+- Comprehensive test suite
+- Django admin interface
 
 ## Quick Start (Docker)
-
-The recommended way to run Fever is using Docker.
 
 ```bash
 # Build and start the services
@@ -81,14 +40,12 @@ docker compose run --rm web python manage.py refresh_feeds --user demo@example.c
 
 ## Quick Start (Local Development)
 
-If you prefer running without Docker:
-
 ```bash
 # Install dependencies
 pip install uv
 uv sync
 
-# Install pre-commit hooks (runs tests before commit)
+# Install pre-commit hooks
 uv run pre-commit install
 
 # Run migrations
@@ -101,292 +58,184 @@ uv run python setup_demo.py
 uv run python manage.py runserver
 ```
 
-## Requirements
+## Production Deployment
 
-- Python 3.12+
-- uv package manager
-- Database (SQLite by default, or PostgreSQL/MySQL)
+### Azure Container Apps (Recommended)
 
-## Installation
+The project is optimized for Azure Container Apps with scale-to-zero for cost efficiency.
 
-### 1. Clone and Setup
+**Prerequisites:**
+- Azure CLI (`az`)
+- GitHub CLI (`gh`)
+- An Azure Subscription
 
+**Architecture:**
+- **Web App:** Django application (scale-to-zero enabled, expect 10-15s cold start)
+- **Worker Job:** Scheduled feed refreshes (hourly cron: `0 * * * *`)
+- **Database:** PostgreSQL via Neon Serverless (switched from SQLite due to file locking issues with container concurrency)
+- **Registry:** Azure Container Registry
+- **Environment:** Azure Container Apps Environment
+
+**Deployment:**
+
+1. Login to Azure:
+   ```bash
+   az login
+   ```
+
+2. Run the setup script:
+   ```bash
+   ./scripts/setup_azure_infra.sh
+   ```
+
+3. Deploy via GitHub Actions (push to `main`) or manually:
+   ```bash
+   ./scripts/deploy_azure.sh <web-image-tag> <worker-image-tag>
+   ```
+
+**Useful Commands:**
 ```bash
-git clone https://github.com/michaelklos/feverish.git
-cd feverish
+# View logs
+az containerapp logs show --name feverish-web --resource-group feverish-rg --follow
+
+# Connect to console
+az containerapp exec --name feverish-web --resource-group feverish-rg --command bash
+
+# Manually trigger feed refresh
+az containerapp job start --name feverish-worker --resource-group feverish-rg
+
+# Create superuser
+az containerapp exec --name feverish-web --resource-group feverish-rg \
+  --command "python manage.py createsuperuser"
 ```
 
-### 2. Install Dependencies
+### Generic Production Deployment
 
-The project uses standard Python tooling. You can use `pip` or `uv`:
+For VPS, DigitalOcean, or other environments:
 
+1. Set environment variables:
+   ```bash
+   DEBUG=False
+   SECRET_KEY=your-secure-random-key
+   ALLOWED_HOSTS=yourdomain.com
+   DATABASE_URL=postgres://user:pass@host:5432/dbname
+   ```
+
+2. Use a production WSGI server:
+   ```bash
+   uv add gunicorn
+   uv run gunicorn feverish.wsgi:application --bind 0.0.0.0:8000
+   ```
+
+3. Set up a reverse proxy (Nginx/Apache) with SSL/TLS
+
+## Client Configuration
+
+### Reeder (iOS/macOS)
+
+1. Open Reeder → Settings → Accounts → Add Account
+2. Select "Fever"
+3. Enter:
+   - **Server**: `https://your-server.com` (include `/api/` if needed)
+   - **Email**: Your Fever user email
+   - **Password**: Your Fever user password
+
+### API Key
+
+The Fever API key is: `md5(email:password)`
+
+Test authentication:
 ```bash
-# Install uv (optional, but recommended for speed)
-pip install uv
-
-# Install project dependencies
-uv sync
-
-# Install pre-commit hooks (optional, for development)
-uv run pre-commit install
+curl -X POST "https://your-server.com/api/" -d "api_key=YOUR_API_KEY"
 ```
 
-### 3. Configure Database
+## API Reference
 
-By default, the application uses SQLite. To use PostgreSQL or MySQL, update `feverish/settings.py`:
+All endpoints use `POST /api/` with `api_key` parameter.
 
-**For PostgreSQL:**
-```python
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'fever_db',
-        'USER': 'fever_user',
-        'PASSWORD': 'your_password',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-```
+**Query endpoints:**
+- `?groups` - Feed groups
+- `?feeds` - Feeds with group relationships
+- `?items` - Items (supports `max_id`, `since_id`, `with_ids`, `feed_ids`, `group_ids`)
+- `?favicons` - Favicon data
+- `?unread_item_ids` - Comma-separated unread IDs
+- `?saved_item_ids` - Comma-separated saved IDs
+- `?links` - Hot links
 
-**For MySQL:**
-```python
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'fever_db',
-        'USER': 'fever_user',
-        'PASSWORD': 'your_password',
-        'HOST': 'localhost',
-        'PORT': '3306',
-    }
-}
-```
+**Mark operations:**
+- `mark=item&as=read&id=123`
+- `mark=item&as=unread&id=123`
+- `mark=item&as=saved&id=123`
+- `mark=item&as=unsaved&id=123`
+- `mark=feed&as=read&id=123`
+- `mark=group&as=read&id=123`
 
-### 4. Initialize Database
-
-```bash
-# Run migrations
-uv run python manage.py migrate
-
-# Create a superuser (for Django admin)
-uv run python manage.py createsuperuser
-```
-
-### 5. Create Fever User
-
-You need to create a Fever user for API access. You can do this via Django shell:
-
-```bash
-uv run python manage.py shell
-```
-
-```python
-from api.models import FeverUser
-
-# Create user
-user = FeverUser.objects.create_user(email='your@email.com', password='yourpassword')
-user.save()
-
-# Your API key will be: md5(your@email.com:yourpassword)
-# You can use this in Reeder or other Fever-compatible clients
-```
-
-### 6. Add Feeds
-
-You can add feeds via Django admin or shell:
-
-**Via Django Admin:**
-1. Run: `uv run python manage.py runserver`
-2. Go to http://localhost:8000/admin/
-3. Add feeds and groups
-
-**Via Shell:**
-```python
-from api.models import Feed, Group, FeverUser
-import hashlib
-
-user = FeverUser.objects.first()
-
-# Create a group
-group = Group.objects.create(user=user, title="Tech News")
-
-# Add a feed
-feed = Feed.objects.create(
-    user=user,
-    title="Hacker News",
-    url="https://news.ycombinator.com/rss",
-    url_checksum=int(hashlib.md5("https://news.ycombinator.com/rss".encode()).hexdigest()[:8], 16)
-)
-feed.groups.add(group)
-```
-
-### 7. Refresh Feeds
+## Feed Management
 
 ```bash
 # Refresh all feeds
 uv run python manage.py refresh_feeds
 
-# Refresh feeds for specific user
+# Refresh for specific user
 uv run python manage.py refresh_feeds --user your@email.com
 
 # Refresh specific feed
 uv run python manage.py refresh_feeds --feed-id 1
+
+# Verbose output
+uv run python manage.py refresh_feeds --verbosity 2
 ```
 
-### 8. Run Server
-
+For automated refresh, set up a cron job:
 ```bash
-uv run python manage.py runserver
+*/15 * * * * cd /path/to/feverish && uv run python manage.py refresh_feeds
 ```
-
-The API will be available at: `http://localhost:8000/api/`
-
-## API Configuration
-
-### For Reeder (iOS/macOS)
-
-1. Open Reeder
-2. Go to Settings → Accounts → Add Account
-3. Select "Fever"
-4. Enter:
-   - **Server**: `http://localhost:8000` (or your server URL)
-   - **Email**: Your Fever user email
-   - **Password**: Your Fever user password
-
-### API Endpoint
-
-The Fever API is available at: `http://your-server/api/`
-
-### API Key Generation
-
-The API key is calculated as: `md5(email:password_hash)`
-
-You can test authentication with:
-```bash
-curl -X POST "http://localhost:8000/api/" \
-  -d "api_key=YOUR_API_KEY"
-```
-
-## API Endpoints
-
-The following Fever API v3 endpoints are supported:
-
-- `POST /api/` - Main API endpoint
-  - With `api_key` parameter for authentication
-  - `?groups` - Get feed groups
-  - `?feeds` - Get feeds
-  - `?items` - Get items (with pagination)
-  - `?favicons` - Get favicons
-  - `?unread_item_ids` - Get unread item IDs
-  - `?saved_item_ids` - Get saved item IDs
-  - `?links` - Get hot links
-
-- Mark operations:
-  - `mark=item&as=read&id=123` - Mark item as read
-  - `mark=item&as=unread&id=123` - Mark item as unread
-  - `mark=item&as=saved&id=123` - Save item
-  - `mark=feed&as=read&id=123` - Mark all feed items as read
-  - `mark=group&as=read&id=123` - Mark all group items as read
-
-## Automated Feed Refresh
-
-To automatically refresh feeds, set up a cron job:
-
-```bash
-# Edit crontab
-crontab -e
-
-# Add this line to refresh every 15 minutes
-*/15 * * * * cd /path/to/fever && uv run python manage.py refresh_feeds
-```
-
-Or use systemd timer, supervisor, or similar process managers.
 
 ## Development
 
 ```bash
-# Run development server
-uv run python manage.py runserver
-
 # Run tests
 uv run python manage.py test
 
-# Create migrations after model changes
+# Run tests with coverage
+uv run pytest --cov=api
+
+# Create migrations
 uv run python manage.py makemigrations
 
 # Apply migrations
 uv run python manage.py migrate
 ```
 
-## Deployment
+## Security
 
-### Azure Container Apps (Preferred)
-See the [Azure Deployment](#azure-deployment-recommended) section above. The project includes full infrastructure-as-code support for Azure in the `deploy/` and `scripts/` directories.
+See [SECURITY.md](SECURITY.md) for detailed security considerations.
 
-### Generic Production Deployment
+**Key points:**
+- Passwords are stored using Django's PBKDF2 hashing (secure)
+- The Fever API key uses MD5 per the original spec (compatibility trade-off)
+- Always use HTTPS in production
+- API key is transmitted with each request - HTTPS is critical
 
-For other production environments (VPS, DigitalOcean, etc.):
+## Project Structure
 
-1. Set `DEBUG = False` in `fever_django/settings.py`
-2. Set a secure `SECRET_KEY`
-3. Configure `ALLOWED_HOSTS`
-4. Use a production database (PostgreSQL/MySQL)
-5. Set up a production WSGI server (Gunicorn, uWSGI)
-6. Configure a reverse proxy (Nginx, Apache)
-7. Set up SSL/TLS certificates
-
-Example with Gunicorn:
-```bash
-uv add gunicorn
-uv run gunicorn fever_django.wsgi:application --bind 0.0.0.0:8000
 ```
-
-## Backward Compatibility
-
-This implementation maintains full backward compatibility with:
-- Fever API v3 specification
-- Fever-compatible RSS readers (Reeder, ReadKit, etc.)
-- Original Fever database schema (with `fever_` prefix)
-
-## Legacy PHP Code
-
-The original PHP code is preserved in the `firewall/` directory for reference. The Django implementation in the `api/` app provides the same functionality with modern improvements.
-
-## Troubleshooting
-
-### API Key Issues
-If you can't authenticate, verify your API key:
-```python
-import hashlib
-email = "your@email.com"
-password = "yourpassword"
-api_key = hashlib.md5(f"{email}:{password}".encode()).hexdigest()
-print(f"Your API key: {api_key}")
+feverish/
+├── api/                    # Main Django app
+│   ├── models.py           # Database models (FeverUser, Feed, Item, etc.)
+│   ├── views.py            # Fever API implementation
+│   ├── web_views.py        # Web interface
+│   └── management/commands/
+│       └── refresh_feeds.py
+├── feverish/               # Django project settings
+├── templates/              # HTML templates
+├── static/                 # CSS, JS, images
+├── deploy/                 # Azure deployment templates
+├── scripts/                # Deployment scripts
+└── firewall/               # Original PHP code (preserved for reference)
 ```
-
-### Database Issues
-- Ensure migrations are applied: `uv run python manage.py migrate`
-- Check database connection settings in `fever_django/settings.py`
-
-### Feed Refresh Issues
-- Check feed URL is accessible
-- Verify feed format (RSS/Atom)
-- Check logs: `uv run python manage.py refresh_feeds --verbosity 2`
-
-## Contributing
-
-Contributions are welcome! Please ensure:
-- Code follows Django best practices
-- Tests are included for new features
-- API compatibility is maintained
-- Documentation is updated
-
-## License
-
-This project maintains the spirit of the original Fever by Shaun Inman while providing a modern, open-source implementation.
 
 ## Credits
 
 - Original Fever by Shaun Inman (http://feedafever.com/)
-- Django RSS reader port by the community
+- Django port and modernization by the community
