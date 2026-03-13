@@ -36,7 +36,19 @@ def fever_api(request):
     # Authentication
     params = request.GET.copy()
     params.update(request.POST)
+
+    # Some clients send JSON body instead of form-encoded
+    if not params.get('api_key') and request.content_type and 'json' in request.content_type:
+        import json
+        try:
+            body = json.loads(request.body)
+            if isinstance(body, dict):
+                params.update(body)
+        except (json.JSONDecodeError, ValueError):
+            pass
+
     api_key = params.get('api_key', '')
+    logger.info(f"Fever API request: method={request.method}, content_type={request.content_type}, has_api_key={bool(api_key)}")
     user = authenticate_api_key(api_key)
 
     if not user:
