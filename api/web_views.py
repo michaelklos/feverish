@@ -5,6 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from .models import FeverUser, Feed, Group, Item
 from .utils import refresh_feed
+import hashlib
 
 
 @csrf_exempt
@@ -29,6 +30,11 @@ def login_view(request):
         # Authenticate using email instead of username
         user = authenticate(request, username=email, password=password)
         if user is not None:
+            # Ensure fever_api_key is set/synced for Fever API clients
+            expected_key = hashlib.md5(f"{user.email}:{password}".encode()).hexdigest()
+            if user.fever_api_key != expected_key:
+                user.fever_api_key = expected_key
+                user.save(update_fields=['fever_api_key'])
             login(request, user)
             return redirect('index')
 
