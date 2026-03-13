@@ -1,11 +1,13 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from .models import FeverUser, Feed, Group, Item
 from .utils import refresh_feed
 
 
+@csrf_exempt
 def index(request):
     """Main reader interface"""
     # Detect Fever API requests (clients like Fiery Feeds hit the root URL with ?api)
