@@ -8,6 +8,11 @@ from .utils import refresh_feed
 
 def index(request):
     """Main reader interface"""
+    # Detect Fever API requests (clients like Fiery Feeds hit the root URL with ?api)
+    if 'api' in request.GET or request.POST.get('api_key'):
+        from .views import fever_api
+        return fever_api(request)
+
     if not request.user.is_authenticated:
         return redirect('login')
     return render(request, 'reader.html')
