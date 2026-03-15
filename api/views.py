@@ -48,10 +48,22 @@ def fever_api(request):
             pass
 
     api_key = params.get('api_key', '')
-    logger.info(f"Fever API request: method={request.method}, content_type={request.content_type}, has_api_key={bool(api_key)}")
+    logger.info(
+        f"Fever API request: method={request.method}, "
+        f"content_type={request.content_type}, "
+        f"has_api_key={bool(api_key)}, "
+        f"api_key_prefix={api_key[:8] + '...' if api_key else 'empty'}, "
+        f"POST_keys={list(request.POST.keys())}, "
+        f"GET_keys={list(request.GET.keys())}, "
+        f"body_length={len(request.body)}"
+    )
     user = authenticate_api_key(api_key)
 
     if not user:
+        # Log stored keys for debugging (only prefix for security)
+        all_users = FeverUser.objects.exclude(fever_api_key='').values_list('email', 'fever_api_key')
+        for email, key in all_users:
+            logger.info(f"  DB user={email}, stored_key_prefix={key[:8]}...")
         return JsonResponse({'api_version': 3, 'auth': 0})
 
     handler = FeverAPIHandler(request, user)
