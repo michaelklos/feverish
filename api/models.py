@@ -211,11 +211,11 @@ class ItemManager(models.Manager):
 class Item(models.Model):
     """Feed items (articles)"""
     feed = models.ForeignKey(Feed, on_delete=models.CASCADE, related_name='items')
-    uid = models.CharField(max_length=255, null=True, blank=True)
-    title = models.CharField(max_length=255, null=True, blank=True)
+    uid = models.TextField(null=True, blank=True)
+    title = models.CharField(max_length=512, null=True, blank=True)
     author = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    link = models.CharField(max_length=255, null=True, blank=True)
+    link = models.TextField(null=True, blank=True)
     url_checksum = models.BigIntegerField()
     read_on_time = models.BigIntegerField(default=0)
     is_saved = models.BooleanField(default=False)

@@ -35,6 +35,7 @@ def refresh_feed(feed):
     feed.save()
 
     # Process entries
+    logger.info(f"  Fetched {len(parsed.entries)} entries (HTTP status: {getattr(parsed, 'status', 'N/A')})")
     new_items_count = 0
     for entry in parsed.entries:
         # Generate unique ID
