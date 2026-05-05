@@ -19,7 +19,10 @@ def calculate_checksum(text):
 def refresh_feed(feed):
     """Fetch and parse RSS feed"""
     logger.info(f"Refreshing feed: {feed.title or feed.url}")
-    parsed = feedparser.parse(feed.url)
+    parsed = feedparser.parse(
+        feed.url,
+        agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    )
 
     current_time = int(time.time())
     feed.last_refreshed_on_time = current_time
