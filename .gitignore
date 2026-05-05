@@ -65,3 +65,6 @@ htmlcov/
 */migrations/*.pyc
 # Deployment
 deploy/*.generated.yaml
+
+# Local environment
+.env
